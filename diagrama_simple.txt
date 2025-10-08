@@ -1,0 +1,45 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                    DIAGRAMA ENTIDAD-RELACIÓN                   │
+│                    SISTEMA DE MAPEO DE EMERGENCIAS             │
+└─────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────┐        1:N        ┌─────────────────┐
+    │    USUARIOS     │◄──────────────────│     PUNTOS      │
+    │                 │                   │                 │
+    │ • id (PK)       │                   │ • id (PK)       │
+    │ • email         │                   │ • nombre        │
+    │ • password      │                   │ • descripcion   │
+    │ • nombre        │                   │ • latitud       │
+    │ • rol           │                   │ • longitud      │
+    │ • telefono      │                   │ • categoria_id  │
+    │ • institucion   │                   │ • usuario_id    │
+    │ • latitud       │                   │ • estado        │
+    │ • longitud      │                   │ • fecha_creacion│
+    │ • created_at    │                   └─────────────────┘
+    └─────────────────┘                            │
+                                                   │ N:1
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │   CATEGORÍAS    │
+                                          │                 │
+                                          │ • id (PK)       │
+                                          │ • nombre        │
+                                          │ • descripcion   │
+                                          │ • icono         │
+                                          │ • color         │
+                                          │ • estado        │
+                                          │ • fecha_creacion│
+                                          └─────────────────┘
+
+RELACIONES:
+• Un USUARIO puede crear muchos PUNTOS (1:N)
+• Una CATEGORÍA puede tener muchos PUNTOS (1:N)
+• Un PUNTO pertenece a un USUARIO y una CATEGORÍA (N:1)
+
+CLAVES FORÁNEAS:
+• puntos.usuario_id → usuarios.id
+• puntos.categoria_id → categorias.id
+
+
+
+
