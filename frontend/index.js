@@ -1,4 +1,12 @@
-import {fnRecuperarUsuarios, fnRecuperarCategorias, fnRecuperarPuntos, fnRecuperarEstadisticas, fnRecuperarPuntosConRelaciones} from "./modelo.js";
+import {
+    fnRecuperarUsuarios, 
+    fnRecuperarCategorias, 
+    fnRecuperarPuntos,
+    fnRecuperarPuntoPorId,
+    fnActualizarPunto,
+    fnRecuperarEstadisticas, 
+    fnRecuperarPuntosConRelaciones
+} from "./modelo.js";
 
 // Variables globales
 let mapa = null;
@@ -422,6 +430,7 @@ function mostrarPuntos(puntos) {
                         <th>Usuario</th>
                         <th>Coordenadas</th>
                         <th>Estado</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -441,6 +450,11 @@ function mostrarPuntos(puntos) {
                 <td>${punto.usuario_nombre}</td>
                 <td><small>${punto.latitud}, ${punto.longitud}</small></td>
                 <td>${estado}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="editarPunto(${punto.id})">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </td>
             </tr>
         `;
     });
@@ -631,6 +645,113 @@ async function crearPunto() {
         }
     } catch (error) {
         mostrarError('Error al crear punto: ' + error.message);
+    } finally {
+        mostrarLoading(false);
+    }
+}
+
+// Función para editar un punto
+window.editarPunto = async function(id) {
+    mostrarLoading(true);
+    try {
+        const datos = await fnRecuperarPuntoPorId(id);
+        if (datos.result_estado === 'ok') {
+            const punto = datos.result_data;
+            mostrarFormularioEditarPunto(punto);
+        } else {
+            mostrarError('Error al cargar punto: ' + datos.result_message);
+        }
+    } catch (error) {
+        mostrarError('Error al cargar punto: ' + error.message);
+    } finally {
+        mostrarLoading(false);
+    }
+};
+
+function mostrarFormularioEditarPunto(punto) {
+    const html = `
+        <h6><i class="fas fa-edit"></i> Editar Punto</h6>
+        <form id="formEditarPunto">
+            <input type="hidden" id="editPuntoId" value="${punto.id}">
+            <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="editNombrePunto" value="${punto.nombre}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" id="editDescripcionPunto" rows="3">${punto.descripcion || ''}</textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Latitud</label>
+                        <input type="number" step="0.000001" class="form-control" id="editLatitudPunto" value="${punto.latitud}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Longitud</label>
+                        <input type="number" step="0.000001" class="form-control" id="editLongitudPunto" value="${punto.longitud}" required>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Categoría ID</label>
+                <input type="number" class="form-control" id="editCategoriaPunto" value="${punto.categoria_id}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Usuario ID</label>
+                <input type="number" class="form-control" id="editUsuarioPunto" value="${punto.usuario_id}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select class="form-select" id="editEstadoPunto" required>
+                    <option value="activo" ${punto.estado === 'activo' ? 'selected' : ''}>Activo</option>
+                    <option value="inactivo" ${punto.estado === 'inactivo' ? 'selected' : ''}>Inactivo</option>
+                </select>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="listarPuntos()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    `;
+    
+    mostrarResultados(html);
+    
+    // Agregar event listener al formulario
+    document.getElementById('formEditarPunto').addEventListener('submit', guardarCambiosPunto);
+}
+
+async function guardarCambiosPunto(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('editPuntoId').value;
+    const datosPunto = {
+        nombre: document.getElementById('editNombrePunto').value,
+        descripcion: document.getElementById('editDescripcionPunto').value,
+        latitud: parseFloat(document.getElementById('editLatitudPunto').value),
+        longitud: parseFloat(document.getElementById('editLongitudPunto').value),
+        categoria_id: parseInt(document.getElementById('editCategoriaPunto').value),
+        usuario_id: parseInt(document.getElementById('editUsuarioPunto').value),
+        estado: document.getElementById('editEstadoPunto').value
+    };
+    
+    mostrarLoading(true);
+    try {
+        const datos = await fnActualizarPunto(id, datosPunto);
+        if (datos.result_estado === 'ok') {
+            mostrarExito('Punto actualizado correctamente');
+            setTimeout(() => listarPuntos(), 1500);
+        } else {
+            mostrarError('Error al actualizar punto: ' + datos.result_message);
+        }
+    } catch (error) {
+        mostrarError('Error al actualizar punto: ' + error.message);
     } finally {
         mostrarLoading(false);
     }

@@ -23,19 +23,19 @@ const pool = new Pool({
 
 // Función auxiliar para construir respuestas estandarizadas
 const construirRespuesta = (estado, mensaje, filas, verbo, proceso, datos) => ({
-    result_estado: estado,
-    result_message: mensaje,
-    result_rows: filas,
-    result_verbo: verbo,
-    result_proceso: proceso,
-    result_data: datos
+    result_estado: estado, // Estado de la respuesta (ok, error)
+    result_message: mensaje, // Mensaje de la respuesta (descripción del resultado)
+    result_rows: filas, // Número de filas afectadas o recuperadas
+    result_verbo: verbo, // Verbo HTTP (GET, POST, PUT, DELETE)
+    result_proceso: proceso, // Proceso (nombre del endpoint)
+    result_data: datos // Datos de la respuesta
 });
-
+/*
 // Función auxiliar para manejo de errores en endpoints
 const manejarError = (error, verbo, proceso, res) => {
     const respuesta = construirRespuesta("error", error.message, 0, verbo, proceso, "");
     res.json(respuesta);
-};
+};*/
 
 // ==================== ENDPOINTS - USUARIOS ====================
 

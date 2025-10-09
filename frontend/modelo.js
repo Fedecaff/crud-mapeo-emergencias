@@ -41,6 +41,36 @@ export const fnRecuperarPuntos = async () => {
     return datos;
 };
 
+export const fnRecuperarPuntoPorId = async (id) => {
+    let datos = null;
+    try {
+        const URL = `http://localhost:3000/puntos/${id}`;
+        const response = await fetch(URL);
+        datos = await response.json();
+    } catch (error) {
+        console.log('Error al recuperar punto por ID:', error);
+    }
+    return datos;
+};
+
+export const fnActualizarPunto = async (id, datosPunto) => {
+    let datos = null;
+    try {
+        const URL = `http://localhost:3000/puntos/${id}`;
+        const response = await fetch(URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosPunto)
+        });
+        datos = await response.json();
+    } catch (error) {
+        console.log('Error al actualizar punto:', error);
+    }
+    return datos;
+};
+
 // ==================== FUNCIONES DE CONSULTAS ESPECIALES ====================
 
 export const fnRecuperarEstadisticas = async () => {
