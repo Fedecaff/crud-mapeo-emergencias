@@ -288,28 +288,30 @@ app.get("/puntos", async (req, res) => {
         res.json(Salida);
     });
 
-// GET /puntos/:id - Obtener punto por ID
-app.get("/puntos/:id", async (req, res) => {
+// GET /puntos/con-relaciones - Puntos con datos completos de relaciones
+app.get("/puntos/con-relaciones", async (req, res) => {
         let Salida;
 
         try {
-            const { id } = req.params;
             const sentenciaSQL = `
-                SELECT p.id, p.nombre, p.descripcion, p.latitud, p.longitud, 
-                       p.categoria_id, p.usuario_id, p.estado, p.fecha_creacion, p.fecha_actualizacion,
-                       c.nombre as categoria_nombre, c.icono as categoria_icono, c.color as categoria_color,
-                       u.nombre as usuario_nombre, u.email as usuario_email
+                SELECT 
+                    p.id, p.nombre as punto_nombre, p.descripcion as punto_descripcion,
+                    p.latitud, p.longitud, p.estado as punto_estado, p.fecha_creacion,
+                    c.id as categoria_id, c.nombre as categoria_nombre, c.descripcion as categoria_descripcion,
+                    c.icono as categoria_icono, c.color as categoria_color,
+                    u.id as usuario_id, u.nombre as usuario_nombre, u.email as usuario_email,
+                    u.rol as usuario_rol, u.institucion as usuario_institucion
                 FROM puntos p
                 JOIN categorias c ON p.categoria_id = c.id
                 JOIN usuarios u ON p.usuario_id = u.id
-                WHERE p.id = $1
+                ORDER BY p.fecha_creacion DESC
             `;
 
-            const resultado = await pool.query(sentenciaSQL, [id]);
-            Salida = construirRespuesta("ok", "punto recuperado correctamente", 
-                                      resultado.rowCount, "get", "/puntos/:id", resultado.rows[0]);
+            const resultado = await pool.query(sentenciaSQL);
+            Salida = construirRespuesta("ok", "puntos con relaciones recuperados correctamente", 
+                                      resultado.rowCount, "get", "/puntos/con-relaciones", resultado.rows);
         } catch (error) {
-            Salida = construirRespuesta("error", error.message, 0, "get", "/puntos/:id", "");
+            Salida = construirRespuesta("error", error.message, 0, "get", "/puntos/con-relaciones", "");
         }
 
         res.json(Salida);
@@ -364,6 +366,33 @@ app.get("/puntos/por-usuario/:usuarioId", async (req, res) => {
                                       resultado.rowCount, "get", "/puntos/por-usuario/:usuarioId", resultado.rows);
         } catch (error) {
             Salida = construirRespuesta("error", error.message, 0, "get", "/puntos/por-usuario/:usuarioId", "");
+        }
+
+        res.json(Salida);
+    });
+
+// GET /puntos/:id - Obtener punto por ID (debe ir al final de los GET)
+app.get("/puntos/:id", async (req, res) => {
+        let Salida;
+
+        try {
+            const { id } = req.params;
+            const sentenciaSQL = `
+                SELECT p.id, p.nombre, p.descripcion, p.latitud, p.longitud, 
+                       p.categoria_id, p.usuario_id, p.estado, p.fecha_creacion, p.fecha_actualizacion,
+                       c.nombre as categoria_nombre, c.icono as categoria_icono, c.color as categoria_color,
+                       u.nombre as usuario_nombre, u.email as usuario_email
+                FROM puntos p
+                JOIN categorias c ON p.categoria_id = c.id
+                JOIN usuarios u ON p.usuario_id = u.id
+                WHERE p.id = $1
+            `;
+
+            const resultado = await pool.query(sentenciaSQL, [id]);
+            Salida = construirRespuesta("ok", "punto recuperado correctamente", 
+                                      resultado.rowCount, "get", "/puntos/:id", resultado.rows[0]);
+        } catch (error) {
+            Salida = construirRespuesta("error", error.message, 0, "get", "/puntos/:id", "");
         }
 
         res.json(Salida);
@@ -463,30 +492,62 @@ app.get("/estadisticas", async (req, res) => {
         res.json(Salida);
     });
 
-// GET /puntos/con-relaciones - Puntos con datos completos de relaciones
-app.get("/puntos/con-relaciones", async (req, res) => {
+// GET /estadisticas/graficos - Estadísticas para gráficos
+app.get("/estadisticas/graficos", async (req, res) => {
         let Salida;
 
         try {
-            const sentenciaSQL = `
-                SELECT 
-                    p.id, p.nombre as punto_nombre, p.descripcion as punto_descripcion,
-                    p.latitud, p.longitud, p.estado as punto_estado, p.fecha_creacion,
-                    c.id as categoria_id, c.nombre as categoria_nombre, c.descripcion as categoria_descripcion,
-                    c.icono as categoria_icono, c.color as categoria_color,
-                    u.id as usuario_id, u.nombre as usuario_nombre, u.email as usuario_email,
-                    u.rol as usuario_rol, u.institucion as usuario_institucion
-                FROM puntos p
-                JOIN categorias c ON p.categoria_id = c.id
-                JOIN usuarios u ON p.usuario_id = u.id
-                ORDER BY p.fecha_creacion DESC
-            `;
+            // Query 1: Puntos por categoría (para gráfico Donut)
+            const puntosCategoria = await pool.query(`
+                SELECT c.nombre as categoria, c.color, COUNT(p.id)::int as cantidad
+                FROM categorias c
+                LEFT JOIN puntos p ON c.id = p.categoria_id
+                GROUP BY c.id, c.nombre, c.color
+                ORDER BY cantidad DESC
+            `);
 
-            const resultado = await pool.query(sentenciaSQL);
-            Salida = construirRespuesta("ok", "puntos con relaciones recuperados correctamente", 
-                                      resultado.rowCount, "get", "/puntos/con-relaciones", resultado.rows);
+            // Query 2: Puntos por usuario (para gráfico Barras)
+            const puntosUsuario = await pool.query(`
+                SELECT u.nombre as usuario, COUNT(p.id)::int as cantidad
+                FROM usuarios u
+                LEFT JOIN puntos p ON u.id = p.usuario_id
+                GROUP BY u.id, u.nombre
+                ORDER BY cantidad DESC
+                LIMIT 5
+            `);
+
+            // Query 3: Puntos por mes (para gráfico Líneas)
+            const puntosMes = await pool.query(`
+                SELECT 
+                    TO_CHAR(fecha_creacion, 'Month') as mes,
+                    COUNT(*)::int as cantidad
+                FROM puntos
+                GROUP BY TO_CHAR(fecha_creacion, 'Month'), 
+                         EXTRACT(MONTH FROM fecha_creacion)
+                ORDER BY EXTRACT(MONTH FROM fecha_creacion)
+            `);
+
+            // Query 4: Distribución general (para gráfico Estados)
+            const distribucion = await pool.query(`
+                SELECT 
+                    (SELECT COUNT(*)::int FROM puntos WHERE estado = 'activo') as puntos_activos,
+                    (SELECT COUNT(*)::int FROM puntos WHERE estado = 'inactivo') as puntos_inactivos,
+                    (SELECT COUNT(*)::int FROM usuarios WHERE rol = 'administrador') as administradores,
+                    (SELECT COUNT(*)::int FROM usuarios WHERE rol = 'operador') as operadores
+            `);
+
+            // Construir objeto con todos los datos
+            const datosGraficos = {
+                puntos_por_categoria: puntosCategoria.rows,
+                puntos_por_usuario: puntosUsuario.rows,
+                puntos_por_mes: puntosMes.rows,
+                distribucion: distribucion.rows[0]
+            };
+
+            Salida = construirRespuesta("ok", "estadísticas para gráficos recuperadas correctamente",
+                                      1, "get", "/estadisticas/graficos", datosGraficos);
         } catch (error) {
-            Salida = construirRespuesta("error", error.message, 0, "get", "/puntos/con-relaciones", "");
+            Salida = construirRespuesta("error", error.message, 0, "get", "/estadisticas/graficos", "");
         }
 
         res.json(Salida);
@@ -520,8 +581,8 @@ app.get("/categorias/con-puntos", async (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
-    console.log(`📊 API REST: http://localhost:${PORT}`);
-    console.log(`🌐 Frontend: http://localhost:${PORT}`);
+    console.log(` Servidor ejecutándose en puerto ${PORT}`);
+    console.log(` API REST: http://localhost:${PORT}`);
+    console.log(` Frontend: http://localhost:${PORT}`);
 });
 

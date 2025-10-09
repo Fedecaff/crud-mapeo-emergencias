@@ -85,6 +85,18 @@ export const fnRecuperarEstadisticas = async () => {
     return datos;
 };
 
+export const fnRecuperarEstadisticasGraficos = async () => {
+    let datos = null;
+    try {
+        const URL = `http://localhost:3000/estadisticas/graficos`;
+        const response = await fetch(URL);
+        datos = await response.json();
+    } catch (error) {
+        console.log('Error al recuperar estadísticas para gráficos:', error);
+    }
+    return datos;
+};
+
 export const fnRecuperarPuntosConRelaciones = async () => {
     let datos = null;
     try {

@@ -1,45 +1,16 @@
-import {
-    fnRecuperarUsuarios, 
-    fnRecuperarCategorias, 
-    fnRecuperarPuntos,
-    fnRecuperarPuntoPorId,
-    fnActualizarPunto,
-    fnRecuperarEstadisticas, 
-    fnRecuperarPuntosConRelaciones
-} from "./modelo.js";
+// ==================== ARCHIVO DE VISTAS ====================
+// Este archivo solo contiene funciones para RENDERIZAR HTML
+// La lógica de coordinación está en controlador.js
 
-// Variables globales
+import { fnRecuperarEstadisticas } from "./modelo.js";
+
+// Variables globales para el mapa
 let mapa = null;
 let marcadores = [];
 
-// Inicialización cuando se carga la página
-window.addEventListener("load", () => {
-    inicializarEventListeners();
-    inicializarMapa();
-    cargarEstadisticas();
-});
+// ==================== FUNCIONES AUXILIARES ====================
 
-// Función para inicializar todos los event listeners
-function inicializarEventListeners() {
-    // Botones de usuarios
-    document.getElementById('btnListarUsuarios').addEventListener('click', () => listarUsuarios());
-    document.getElementById('btnCrearUsuario').addEventListener('click', () => mostrarFormularioUsuario());
-    
-    // Botones de categorías
-    document.getElementById('btnListarCategorias').addEventListener('click', () => listarCategorias());
-    document.getElementById('btnCrearCategoria').addEventListener('click', () => mostrarFormularioCategoria());
-    
-    // Botones de puntos
-    document.getElementById('btnListarPuntos').addEventListener('click', () => listarPuntos());
-    document.getElementById('btnCrearPunto').addEventListener('click', () => mostrarFormularioPunto());
-    
-    // Botones de consultas especiales
-    document.getElementById('btnEstadisticas').addEventListener('click', () => mostrarEstadisticas());
-    document.getElementById('btnPuntosConRelaciones').addEventListener('click', () => mostrarPuntosConRelaciones());
-}
-
-// Función para inicializar el mapa
-function inicializarMapa() {
+export function inicializarMapa() {
     // Centrar en Catamarca
     mapa = L.map('mapa').setView([-28.4685, -65.7789], 13);
     
@@ -47,10 +18,11 @@ function inicializarMapa() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
+    
+    return mapa;
 }
 
-// Función para mostrar loading
-function mostrarLoading(mostrar = true) {
+export function mostrarLoading(mostrar = true) {
     const loading = document.querySelector('.loading');
     if (mostrar) {
         loading.classList.add('show');
@@ -59,13 +31,11 @@ function mostrarLoading(mostrar = true) {
     }
 }
 
-// Función para mostrar resultados en el panel
-function mostrarResultados(contenido) {
+export function mostrarResultados(contenido) {
     document.getElementById('resultados').innerHTML = contenido;
 }
 
-// Función para mostrar mensaje de error
-function mostrarError(mensaje) {
+export function mostrarError(mensaje) {
     mostrarResultados(`
         <div class="alert alert-danger" role="alert">
             <i class="fas fa-exclamation-triangle"></i> ${mensaje}
@@ -73,8 +43,7 @@ function mostrarError(mensaje) {
     `);
 }
 
-// Función para mostrar mensaje de éxito
-function mostrarExito(mensaje) {
+export function mostrarExito(mensaje) {
     mostrarResultados(`
         <div class="alert alert-success" role="alert">
             <i class="fas fa-check-circle"></i> ${mensaje}
@@ -82,25 +51,9 @@ function mostrarExito(mensaje) {
     `);
 }
 
-// ==================== FUNCIONES DE USUARIOS ====================
+// ==================== FUNCIONES DE VISTA - USUARIOS ====================
 
-async function listarUsuarios() {
-    mostrarLoading(true);
-    try {
-        const datos = await fnRecuperarUsuarios();
-        if (datos.result_estado === 'ok') {
-            mostrarUsuarios(datos.result_data);
-        } else {
-            mostrarError(datos.result_message);
-        }
-    } catch (error) {
-        mostrarError('Error al cargar usuarios: ' + error.message);
-    } finally {
-        mostrarLoading(false);
-    }
-}
-
-function mostrarUsuarios(usuarios) {
+export function mostrarUsuarios(usuarios) {
     let html = `
         <h6><i class="fas fa-users"></i> Lista de Usuarios (${usuarios.length})</h6>
         <div class="table-responsive">
@@ -144,7 +97,7 @@ function mostrarUsuarios(usuarios) {
     mostrarResultados(html);
 }
 
-function mostrarFormularioUsuario() {
+export function mostrarFormularioUsuario() {
     const html = `
         <h6><i class="fas fa-user-plus"></i> Crear Nuevo Usuario</h6>
         <form id="formUsuario">
@@ -258,25 +211,9 @@ async function crearUsuario() {
     }
 }
 
-// ==================== FUNCIONES DE CATEGORÍAS ====================
+// ==================== FUNCIONES DE VISTA - CATEGORÍAS ====================
 
-async function listarCategorias() {
-    mostrarLoading(true);
-    try {
-        const datos = await fnRecuperarCategorias();
-        if (datos.result_estado === 'ok') {
-            mostrarCategorias(datos.result_data);
-        } else {
-            mostrarError(datos.result_message);
-        }
-    } catch (error) {
-        mostrarError('Error al cargar categorías: ' + error.message);
-    } finally {
-        mostrarLoading(false);
-    }
-}
-
-function mostrarCategorias(categorias) {
+export function mostrarCategorias(categorias) {
     let html = `
         <h6><i class="fas fa-tags"></i> Lista de Categorías (${categorias.length})</h6>
         <div class="table-responsive">
@@ -324,7 +261,7 @@ function mostrarCategorias(categorias) {
     mostrarResultados(html);
 }
 
-function mostrarFormularioCategoria() {
+export function mostrarFormularioCategoria() {
     const html = `
         <h6><i class="fas fa-tag"></i> Crear Nueva Categoría</h6>
         <form id="formCategoria">
@@ -397,26 +334,9 @@ async function crearCategoria() {
     }
 }
 
-// ==================== FUNCIONES DE PUNTOS ====================
+// ==================== FUNCIONES DE VISTA - PUNTOS ====================
 
-async function listarPuntos() {
-    mostrarLoading(true);
-    try {
-        const datos = await fnRecuperarPuntos();
-        if (datos.result_estado === 'ok') {
-            mostrarPuntos(datos.result_data);
-            actualizarMapa(datos.result_data);
-        } else {
-            mostrarError(datos.result_message);
-        }
-    } catch (error) {
-        mostrarError('Error al cargar puntos: ' + error.message);
-    } finally {
-        mostrarLoading(false);
-    }
-}
-
-function mostrarPuntos(puntos) {
+export function mostrarPuntos(puntos) {
     let html = `
         <h6><i class="fas fa-map-marker-alt"></i> Lista de Puntos (${puntos.length})</h6>
         <div class="table-responsive">
@@ -468,7 +388,7 @@ function mostrarPuntos(puntos) {
     mostrarResultados(html);
 }
 
-function actualizarMapa(puntos) {
+export function actualizarMapa(puntos) {
     // Limpiar marcadores existentes
     marcadores.forEach(marcador => mapa.removeLayer(marcador));
     marcadores = [];
@@ -520,7 +440,7 @@ function actualizarMapa(puntos) {
     }
 }
 
-function mostrarFormularioPunto() {
+export function mostrarFormularioPunto() {
     const html = `
         <h6><i class="fas fa-plus-circle"></i> Crear Nuevo Punto</h6>
         <form id="formPunto">
@@ -668,7 +588,7 @@ window.editarPunto = async function(id) {
     }
 };
 
-function mostrarFormularioEditarPunto(punto) {
+export function mostrarFormularioEditarPunto(punto) {
     const html = `
         <h6><i class="fas fa-edit"></i> Editar Punto</h6>
         <form id="formEditarPunto">
@@ -724,58 +644,198 @@ function mostrarFormularioEditarPunto(punto) {
     mostrarResultados(html);
     
     // Agregar event listener al formulario
-    document.getElementById('formEditarPunto').addEventListener('submit', guardarCambiosPunto);
-}
-
-async function guardarCambiosPunto(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('editPuntoId').value;
-    const datosPunto = {
-        nombre: document.getElementById('editNombrePunto').value,
-        descripcion: document.getElementById('editDescripcionPunto').value,
-        latitud: parseFloat(document.getElementById('editLatitudPunto').value),
-        longitud: parseFloat(document.getElementById('editLongitudPunto').value),
-        categoria_id: parseInt(document.getElementById('editCategoriaPunto').value),
-        usuario_id: parseInt(document.getElementById('editUsuarioPunto').value),
-        estado: document.getElementById('editEstadoPunto').value
-    };
-    
-    mostrarLoading(true);
-    try {
-        const datos = await fnActualizarPunto(id, datosPunto);
-        if (datos.result_estado === 'ok') {
-            mostrarExito('Punto actualizado correctamente');
-            setTimeout(() => listarPuntos(), 1500);
-        } else {
-            mostrarError('Error al actualizar punto: ' + datos.result_message);
-        }
-    } catch (error) {
-        mostrarError('Error al actualizar punto: ' + error.message);
-    } finally {
-        mostrarLoading(false);
-    }
+    // guardarCambiosPunto está en controlador.js y se importa dinámicamente
+    import('./controlador.js').then(modulo => {
+        document.getElementById('formEditarPunto').addEventListener('submit', modulo.guardarCambiosPunto);
+    });
 }
 
 // ==================== FUNCIONES DE CONSULTAS ESPECIALES ====================
 
-async function mostrarEstadisticas() {
-    mostrarLoading(true);
-    try {
-        const datos = await fnRecuperarEstadisticas();
-        if (datos.result_estado === 'ok') {
-            mostrarEstadisticasDetalladas(datos.result_data);
-        } else {
-            mostrarError(datos.result_message);
-        }
-    } catch (error) {
-        mostrarError('Error al cargar estadísticas: ' + error.message);
-    } finally {
-        mostrarLoading(false);
-    }
+export function mostrarGraficosEstadisticas(datos) {
+    const html = `
+        <h6><i class="fas fa-chart-pie"></i> Gráficos Estadísticos del Sistema</h6>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Distribución por Categoría</h6>
+                        <canvas id="graficoDonut"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Top 5 Usuarios</h6>
+                        <canvas id="graficoBarras"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Tendencia Mensual</h6>
+                        <canvas id="graficoLineas"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Distribución General</h6>
+                        <canvas id="graficoEstados"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    mostrarResultados(html);
+    
+    // Crear gráficos después de que el HTML esté en el DOM
+    setTimeout(() => {
+        crearGraficoDonut(datos.puntos_por_categoria);
+        crearGraficoBarras(datos.puntos_por_usuario);
+        crearGraficoLineas(datos.puntos_por_mes);
+        crearGraficoEstados(datos.distribucion);
+    }, 100);
 }
 
-function mostrarEstadisticasDetalladas(stats) {
+// Gráfico 1: Donut - Puntos por Categoría
+function crearGraficoDonut(datos) {
+    const ctx = document.getElementById('graficoDonut');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: datos.map(d => d.categoria),
+            datasets: [{
+                label: 'Cantidad de Puntos',
+                data: datos.map(d => d.cantidad),
+                backgroundColor: datos.map(d => d.color),
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Gráfico 2: Barras - Puntos por Usuario
+function crearGraficoBarras(datos) {
+    const ctx = document.getElementById('graficoBarras');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: datos.map(d => d.usuario),
+            datasets: [{
+                label: 'Puntos Creados',
+                data: datos.map(d => d.cantidad),
+                backgroundColor: '#36a2eb',
+                borderColor: '#1e88e5',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Gráfico 3: Líneas - Puntos por Mes
+function crearGraficoLineas(datos) {
+    const ctx = document.getElementById('graficoLineas');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: datos.map(d => d.mes.trim()),
+            datasets: [{
+                label: 'Puntos Creados',
+                data: datos.map(d => d.cantidad),
+                borderColor: '#4bc0c0',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Gráfico 4: Barras Horizontales - Distribución General
+function crearGraficoEstados(datos) {
+    const ctx = document.getElementById('graficoEstados');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Puntos Activos', 'Puntos Inactivos', 'Administradores', 'Operadores'],
+            datasets: [{
+                label: 'Cantidad',
+                data: [
+                    datos.puntos_activos,
+                    datos.puntos_inactivos,
+                    datos.administradores,
+                    datos.operadores
+                ],
+                backgroundColor: [
+                    '#4caf50',
+                    '#f44336',
+                    '#ff9800',
+                    '#2196f3'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+export function mostrarEstadisticasDetalladas(stats) {
     const html = `
         <h6><i class="fas fa-chart-bar"></i> Estadísticas Detalladas del Sistema</h6>
         <div class="row">
@@ -809,23 +869,8 @@ function mostrarEstadisticasDetalladas(stats) {
     mostrarResultados(html);
 }
 
-async function mostrarPuntosConRelaciones() {
-    mostrarLoading(true);
-    try {
-        const datos = await fnRecuperarPuntosConRelaciones();
-        if (datos.result_estado === 'ok') {
-            mostrarPuntosConRelacionesDetalladas(datos.result_data);
-        } else {
-            mostrarError(datos.result_message);
-        }
-    } catch (error) {
-        mostrarError('Error al cargar puntos con relaciones: ' + error.message);
-    } finally {
-        mostrarLoading(false);
-    }
-}
 
-function mostrarPuntosConRelacionesDetalladas(puntos) {
+export function mostrarPuntosConRelacionesDetalladas(puntos) {
     let html = `
         <h6><i class="fas fa-link"></i> Puntos con Relaciones Completas (${puntos.length})</h6>
         <div class="table-responsive">
@@ -877,7 +922,7 @@ function mostrarPuntosConRelacionesDetalladas(puntos) {
 
 // ==================== FUNCIÓN PARA CARGAR ESTADÍSTICAS ====================
 
-async function cargarEstadisticas() {
+export async function cargarEstadisticas() {
     try {
         const datos = await fnRecuperarEstadisticas();
         if (datos.result_estado === 'ok') {
