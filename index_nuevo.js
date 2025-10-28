@@ -1,3 +1,6 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 // Importación de librerías
 const express = require("express");
 const { Pool } = require("pg");
@@ -578,6 +581,135 @@ app.get("/categorias/con-puntos", async (req, res) => {
 
         res.json(Salida);
     });
+
+
+    
+
+// GET /reportes/generar-datos - Genera el reporte crudo
+app.get("/reportes/generar-datos", async (req, res) => {
+    let Salida;
+    try {
+        // Query 1: Resumen general
+        const resumenGeneral = await pool.query(`
+            SELECT 
+                (SELECT COUNT(*)::int FROM puntos WHERE estado = 'activo') as puntos_activos,
+                (SELECT COUNT(*)::int FROM puntos WHERE estado = 'inactivo') as puntos_inactivos,
+                (SELECT COUNT(*)::int FROM usuarios) as total_usuarios,
+                (SELECT COUNT(*)::int FROM categorias) as total_categorias
+        `);
+
+        // Query 2: Puntos por categoría
+        const puntosPorCategoria = await pool.query(`
+            SELECT 
+                c.nombre as categoria,
+                COUNT(p.id)::int as cantidad,
+                c.color as color_categoria
+            FROM categorias c
+            LEFT JOIN puntos p ON c.id = p.categoria_id
+            GROUP BY c.id, c.nombre, c.color
+            ORDER BY cantidad DESC
+        `);
+
+        // Combinar los datos
+        const reporteCompleto = {
+            resumen_general: resumenGeneral.rows[0],
+            puntos_por_categoria: puntosPorCategoria.rows
+        };
+
+        Salida = construirRespuesta("ok", "Datos del reporte generados correctamente", 
+                                  1, "get", "/reportes/generar-datos", reporteCompleto);
+    } catch (error) {
+        Salida = construirRespuesta("error", error.message, 0, "get", "/reportes/generar-datos", "");
+    }
+    res.json(Salida);
+});
+
+// POST /reportes/generar-ia - Genera el reporte con análisis de IA
+app.post("/reportes/generar-ia", async (req, res) => {
+    let Salida;
+    try {
+        // Query 1: Resumen general
+        const resumenGeneral = await pool.query(`
+            SELECT 
+                (SELECT COUNT(*)::int FROM puntos WHERE estado = 'activo') as puntos_activos,
+                (SELECT COUNT(*)::int FROM puntos WHERE estado = 'inactivo') as puntos_inactivos,
+                (SELECT COUNT(*)::int FROM usuarios) as total_usuarios,
+                (SELECT COUNT(*)::int FROM categorias) as total_categorias
+        `);
+
+        // Query 2: Puntos por categoría
+        const puntosPorCategoria = await pool.query(`
+            SELECT 
+                c.nombre as categoria,
+                COUNT(p.id)::int as cantidad,
+                c.color as color_categoria
+            FROM categorias c
+            LEFT JOIN puntos p ON c.id = p.categoria_id
+            GROUP BY c.id, c.nombre, c.color
+            ORDER BY cantidad DESC
+        `);
+
+        // Combinar los datos
+        const datosReporte = {
+            resumen_general: resumenGeneral.rows[0],
+            puntos_por_categoria: puntosPorCategoria.rows
+        };
+
+        // Llamada real a MCP/IA usando CommonJS
+        let analisisIA;
+        try {
+            const MCPClient = require('./mcp-cliente.js');
+            const mcpClient = new MCPClient();
+            const conectado = await mcpClient.conectar();
+
+            if (conectado) {
+                analisisIA = await mcpClient.generarResumen(datosReporte);
+                await mcpClient.desconectar();
+            } else {
+                // Fallback si no conecta con MCP
+                analisisIA = {
+                    resumen_ejecutivo: "No se pudo conectar con el servidor MCP. Se muestra análisis simulado.",
+                    hallazgos_clave: [
+                        "Los puntos activos superan a los inactivos",
+                        "La categoría con más puntos concentra la mayor actividad"
+                    ],
+                    recomendaciones: [
+                        "Revisar configuración del servidor MCP",
+                        "Verificar variable de entorno ANTHROPIC_API_KEY"
+                    ],
+                    timestamp: new Date().toISOString()
+                };
+            }
+        } catch (e) {
+            // Fallback si falla la importación o la invocación
+            analisisIA = {
+                resumen_ejecutivo: "Error al invocar MCP/IA. Se muestra análisis simulado.",
+                hallazgos_clave: [
+                    "Los puntos activos superan a los inactivos",
+                    "La categoría con más puntos concentra la mayor actividad"
+                ],
+                recomendaciones: [
+                    "Revisar logs del servidor MCP",
+                    "Asegurar ejecución de mcp-server.js"
+                ],
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        const resultadoCompleto = {
+            datos_crudos: datosReporte,
+            analisis_ia: analisisIA
+        };
+
+        Salida = construirRespuesta("ok", "Reporte con análisis de IA generado correctamente", 
+                                  1, "post", "/reportes/generar-ia", resultadoCompleto);
+    } catch (error) {
+        Salida = construirRespuesta("error", error.message, 0, "post", "/reportes/generar-ia", "");
+    }
+    res.json(Salida);
+});
+
+    
 
 // Iniciar servidor
 app.listen(PORT, () => {

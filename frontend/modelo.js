@@ -108,3 +108,29 @@ export const fnRecuperarPuntosConRelaciones = async () => {
     }
     return datos;
 };
+
+
+// En frontend/modelo.js - agregar estas funciones
+export const fnGenerarDatosReporte = async () => {
+    let datos = null;
+    try {
+        const URL = `http://localhost:3000/reportes/generar-datos`;
+        const response = await fetch(URL);
+        datos = await response.json();
+    } catch (error) {
+        console.log('Error al generar datos del reporte:', error);
+    }
+    return datos;
+};
+
+export const fnGenerarReporteIA = async () => {
+    let datos = null;
+    try {
+        const URL = `http://localhost:3000/reportes/generar-ia`;
+        const response = await fetch(URL, { method: 'POST' });
+        datos = await response.json();
+    } catch (error) {
+        console.log('Error al generar reporte con IA:', error);
+    }
+    return datos;
+};

@@ -6,7 +6,9 @@ import {
     fnActualizarPunto,
     fnRecuperarEstadisticas,
     fnRecuperarEstadisticasGraficos,
-    fnRecuperarPuntosConRelaciones
+    fnRecuperarPuntosConRelaciones,
+    fnGenerarDatosReporte,
+    fnGenerarReporteIA
 } from "./modelo.js";
 
 import {
@@ -26,7 +28,9 @@ import {
     mostrarEstadisticasDetalladas,
     mostrarGraficosEstadisticas,
     mostrarPuntosConRelacionesDetalladas,
-    cargarEstadisticas
+    cargarEstadisticas,
+    mostrarReporteDetallado,
+    mostrarReporteIADetallado
 } from "./index.js";
 
 // Variables globales
@@ -57,6 +61,12 @@ function inicializarEventListeners() {
     // Botones de consultas especiales
     document.getElementById('btnEstadisticas').addEventListener('click', () => mostrarGraficos());
     document.getElementById('btnPuntosConRelaciones').addEventListener('click', () => mostrarPuntosConRelaciones());
+
+
+    // En la función inicializarEventListeners
+document.getElementById('btnGenerarReporte').addEventListener('click', mostrarReporte);
+document.getElementById('btnGenerarReporteIA').addEventListener('click', mostrarReporteIA);
+
 }
 
 // ==================== FUNCIONES DE USUARIOS ====================
@@ -207,6 +217,41 @@ export async function mostrarGraficos() {
         }
     } catch (error) {
         mostrarError('Error al cargar gráficos: ' + error.message);
+    } finally {
+        mostrarLoading(false);
+    }
+}
+
+
+// Nuevas funciones
+export async function mostrarReporte() {
+    mostrarLoading(true);
+    try {
+        const datos = await fnGenerarDatosReporte();
+        if (datos.result_estado === 'ok') {
+            mostrarReporteDetallado(datos.result_data);
+        } else {
+            mostrarError(datos.result_message);
+        }
+    } catch (error) {
+        mostrarError('Error al generar reporte: ' + error.message);
+    } finally {
+        mostrarLoading(false);
+    }
+}
+
+
+export async function mostrarReporteIA() {
+    mostrarLoading(true);
+    try {
+        const datos = await fnGenerarReporteIA();
+        if (datos.result_estado === 'ok') {
+            mostrarReporteIADetallado(datos.result_data);
+        } else {
+            mostrarError(datos.result_message);
+        }
+    } catch (error) {
+        mostrarError('Error al generar reporte con IA: ' + error.message);
     } finally {
         mostrarLoading(false);
     }

@@ -938,3 +938,151 @@ export async function cargarEstadisticas() {
         console.error('Error al cargar estadísticas:', error);
     }
 }
+
+
+// En frontend/index.js - agregar estas funciones
+export function mostrarReporteDetallado(datos) {
+    const contenido = `
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-file-alt"></i> Reporte del Sistema (Datos Crudos)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-chart-bar"></i> Resumen General</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Puntos Activos:</strong></td>
+                                        <td>${datos.resumen_general.puntos_activos}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Puntos Inactivos:</strong></td>
+                                        <td>${datos.resumen_general.puntos_inactivos}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Usuarios:</strong></td>
+                                        <td>${datos.resumen_general.total_usuarios}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Categorías:</strong></td>
+                                        <td>${datos.resumen_general.total_categorias}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-tags"></i> Puntos por Categoría</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Categoría</th>
+                                        <th>Cantidad</th>
+                                        <th>Color</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${datos.puntos_por_categoria.map(item => `
+                                        <tr>
+                                            <td>${item.categoria}</td>
+                                            <td>${item.cantidad}</td>
+                                            <td><span class="badge" style="background-color: ${item.color_categoria}">${item.color_categoria}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    mostrarResultados(contenido);
+}
+
+export function mostrarReporteIADetallado(datos) {
+    const contenido = `
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-robot"></i> Reporte del Sistema con Análisis de IA</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-chart-line"></i> Resumen Ejecutivo</h6>
+                        <p class="text-muted">${datos.analisis_ia.resumen_ejecutivo}</p>
+                        
+                        <h6><i class="fas fa-lightbulb"></i> Hallazgos Clave</h6>
+                        <ul>
+                            ${datos.analisis_ia.hallazgos_clave.map(hallazgo => `<li>${hallazgo}</li>`).join('')}
+                        </ul>
+                        
+                        <h6><i class="fas fa-tasks"></i> Recomendaciones</h6>
+                        <ul>
+                            ${datos.analisis_ia.recomendaciones.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-database"></i> Datos Crudos</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6><i class="fas fa-chart-bar"></i> Resumen General</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Puntos Activos:</strong></td>
+                                                <td>${datos.datos_crudos.resumen_general.puntos_activos}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Puntos Inactivos:</strong></td>
+                                                <td>${datos.datos_crudos.resumen_general.puntos_inactivos}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Total Usuarios:</strong></td>
+                                                <td>${datos.datos_crudos.resumen_general.total_usuarios}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Total Categorías:</strong></td>
+                                                <td>${datos.datos_crudos.resumen_general.total_categorias}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <h6><i class="fas fa-tags"></i> Puntos por Categoría</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Categoría</th>
+                                                <th>Cantidad</th>
+                                                <th>Color</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${datos.datos_crudos.puntos_por_categoria.map(item => `
+                                                <tr>
+                                                    <td>${item.categoria}</td>
+                                                    <td>${item.cantidad}</td>
+                                                    <td><span class="badge" style="background-color: ${item.color_categoria}">${item.color_categoria}</span></td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">Generado el: ${new Date(datos.analisis_ia.timestamp).toLocaleString()}</small>
+            </div>
+        </div>
+    `;
+    mostrarResultados(contenido);
+}
