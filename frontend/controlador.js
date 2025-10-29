@@ -196,6 +196,8 @@ export async function mostrarPuntosConRelaciones() {
         const datos = await fnRecuperarPuntosConRelaciones();
         if (datos.result_estado === 'ok') {
             mostrarPuntosConRelacionesDetalladas(datos.result_data);
+            // Actualizar el mapa con estos puntos también
+            actualizarMapa(datos.result_data);
         } else {
             mostrarError(datos.result_message);
         }

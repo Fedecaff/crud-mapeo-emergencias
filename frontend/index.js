@@ -7,6 +7,7 @@ import { fnRecuperarEstadisticas } from "./modelo.js";
 // Variables globales para el mapa
 let mapa = null;
 let marcadores = [];
+let marcadoresPorId = new Map();
 
 // ==================== FUNCIONES AUXILIARES ====================
 
@@ -18,6 +19,9 @@ export function inicializarMapa() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
+    
+    // Exponer el mapa globalmente para que otras funciones puedan usarlo
+    window.mapaLeaflet = mapa;
     
     return mapa;
 }
@@ -151,12 +155,14 @@ export function mostrarFormularioUsuario() {
                     <div class="mb-3">
                         <label for="latitud" class="form-label">Latitud</label>
                         <input type="number" step="0.000001" class="form-control" id="latitud" value="-28.4685">
+                        <div class="form-text">Hacé clic en el mapa para completar estas coordenadas.</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="longitud" class="form-label">Longitud</label>
                         <input type="number" step="0.000001" class="form-control" id="longitud" value="-65.7789">
+                        <div class="form-text">También podés arrastrar el marcador para ajustar.</div>
                     </div>
                 </div>
             </div>
@@ -167,6 +173,9 @@ export function mostrarFormularioUsuario() {
     `;
     
     mostrarResultados(html);
+    
+    // Activar selección de coordenadas en el mapa para este formulario
+    activarSelectorMapa('latitud', 'longitud');
     
     // Agregar event listener al formulario
     document.getElementById('formUsuario').addEventListener('submit', async (e) => {
@@ -348,7 +357,7 @@ export function mostrarPuntos(puntos) {
                         <th>Descripción</th>
                         <th>Categoría</th>
                         <th>Usuario</th>
-                        <th>Coordenadas</th>
+                        <th>Ubicación</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
@@ -368,7 +377,9 @@ export function mostrarPuntos(puntos) {
                 <td>${punto.descripcion || '-'}</td>
                 <td><span class="badge" style="background-color: ${punto.categoria_color}">${punto.categoria_nombre}</span></td>
                 <td>${punto.usuario_nombre}</td>
-                <td><small>${punto.latitud}, ${punto.longitud}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="centrarEnPunto(${punto.id})">Ver en mapa</button>
+                </td>
                 <td>${estado}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick="editarPunto(${punto.id})">
@@ -392,6 +403,7 @@ export function actualizarMapa(puntos) {
     // Limpiar marcadores existentes
     marcadores.forEach(marcador => mapa.removeLayer(marcador));
     marcadores = [];
+    marcadoresPorId.clear();
     
     // Agregar nuevos marcadores con iconos personalizados
     puntos.forEach(punto => {
@@ -431,6 +443,9 @@ export function actualizarMapa(puntos) {
             .addTo(mapa);
         
         marcadores.push(marcador);
+        if (punto.id) {
+            marcadoresPorId.set(punto.id, marcador);
+        }
     });
     
     // Ajustar vista del mapa si hay puntos
@@ -439,6 +454,20 @@ export function actualizarMapa(puntos) {
         mapa.fitBounds(grupo.getBounds().pad(0.1));
     }
 }
+
+// Centrar el mapa en un punto por ID y abrir su popup
+window.centrarEnPunto = function(id) {
+    const marcador = marcadoresPorId.get(id);
+    if (!marcador || !mapa) return;
+    mapa.setView(marcador.getLatLng(), Math.max(mapa.getZoom(), 15));
+    marcador.openPopup();
+};
+
+// Centrar el mapa en coordenadas directas (para vistas sin id)
+window.centrarEnCoordenadas = function(lat, lng) {
+    if (!mapa) return;
+    mapa.setView([lat, lng], Math.max(mapa.getZoom(), 15));
+};
 
 export function mostrarFormularioPunto() {
     const html = `
@@ -457,12 +486,14 @@ export function mostrarFormularioPunto() {
                     <div class="mb-3">
                         <label for="latitudPunto" class="form-label">Latitud</label>
                         <input type="number" step="0.000001" class="form-control" id="latitudPunto" value="-28.4685" required>
+                        <div class="form-text">Hacé clic en el mapa para completar estas coordenadas.</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="longitudPunto" class="form-label">Longitud</label>
                         <input type="number" step="0.000001" class="form-control" id="longitudPunto" value="-65.7789" required>
+                        <div class="form-text">También podés arrastrar el marcador para ajustar.</div>
                     </div>
                 </div>
             </div>
@@ -494,6 +525,9 @@ export function mostrarFormularioPunto() {
     
     // Cargar opciones de categorías y usuarios
     cargarOpcionesFormularioPunto();
+    
+    // Activar selección de coordenadas en el mapa para este formulario
+    activarSelectorMapa('latitudPunto', 'longitudPunto');
     
     // Agregar event listener al formulario
     document.getElementById('formPunto').addEventListener('submit', async (e) => {
@@ -568,6 +602,44 @@ async function crearPunto() {
     } finally {
         mostrarLoading(false);
     }
+}
+
+// ==================== SELECTOR DE COORDENADAS EN MAPA ====================
+let selectorMarker = null;
+let selectorOnClickHandler = null;
+
+export function activarSelectorMapa(latInputId, lngInputId) {
+    const map = window.mapaLeaflet;
+    if (!map) return;
+
+    const latInput = document.getElementById(latInputId);
+    const lngInput = document.getElementById(lngInputId);
+    if (!latInput || !lngInput) return;
+
+    // Remover handler previo si existiera (para evitar duplicados)
+    if (selectorOnClickHandler) {
+        map.off('click', selectorOnClickHandler);
+        selectorOnClickHandler = null;
+    }
+
+    selectorOnClickHandler = function(e) {
+        const { lat, lng } = e.latlng;
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+
+        if (!selectorMarker) {
+            selectorMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            selectorMarker.on('dragend', (ev) => {
+                const p = ev.target.getLatLng();
+                latInput.value = p.lat.toFixed(6);
+                lngInput.value = p.lng.toFixed(6);
+            });
+        } else {
+            selectorMarker.setLatLng([lat, lng]);
+        }
+    };
+
+    map.on('click', selectorOnClickHandler);
 }
 
 // Función para editar un punto
@@ -880,7 +952,7 @@ export function mostrarPuntosConRelacionesDetalladas(puntos) {
                         <th>Punto</th>
                         <th>Categoría</th>
                         <th>Usuario</th>
-                        <th>Coordenadas</th>
+                        <th>Ubicación</th>
                         <th>Fecha</th>
                     </tr>
                 </thead>
@@ -905,7 +977,9 @@ export function mostrarPuntosConRelacionesDetalladas(puntos) {
                     <small class="text-muted">${punto.usuario_email}</small><br>
                     <span class="badge bg-${punto.usuario_rol === 'administrador' ? 'primary' : 'secondary'}">${punto.usuario_rol}</span>
                 </td>
-                <td><small>${punto.latitud}, ${punto.longitud}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="centrarEnCoordenadas(${punto.latitud}, ${punto.longitud})">Ver en mapa</button>
+                </td>
                 <td><small>${new Date(punto.fecha_creacion).toLocaleDateString()}</small></td>
             </tr>
         `;
