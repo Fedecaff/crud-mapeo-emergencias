@@ -4,7 +4,7 @@
 
 **MCP (Model Context Protocol)** es un protocolo que permite la comunicación segura y estructurada entre aplicaciones y modelos de inteligencia artificial. En este proyecto, utilizamos MCP para generar reportes automáticos con análisis inteligente de los datos del sistema de mapeo de emergencias.
 
-## ⚠️ Importante: Simulación de IA
+## Importante: Simulación de IA
 
 **Este proyecto NO utiliza una IA real** debido a limitaciones de presupuesto para APIs externas (OpenAI, Anthropic, etc.). En su lugar, implementamos un **sistema de análisis inteligente que simula las capacidades de una IA** mediante:
 
@@ -72,19 +72,19 @@ El sistema genera automáticamente:
 
 ## Ventajas del Sistema MCP
 
-### ✅ Sin Dependencias Externas
+### Sin Dependencias Externas
 - **NO requiere APIs de IA externas** (OpenAI, Anthropic, etc.)
 - Funciona completamente offline
 - **Sin costos de API** - ideal para proyectos educativos
 - **Presupuesto cero** para funcionalidades de IA
 
-### ✅ Análisis Real (Simulado)
+### Análisis Real (Simulado)
 - Basado en datos reales de la base de datos
 - **Lógica inteligente** que simula capacidades de IA
 - Patrones identificados mediante algoritmos estadísticos
 - Recomendaciones contextuales basadas en reglas inteligentes
 
-### ✅ Escalable
+### Escalable
 - Fácil de extender con nuevos tipos de análisis
 - Modular y mantenible
 - Integración simple con el sistema existente
@@ -168,9 +168,9 @@ El sistema genera automáticamente:
 El sistema MCP implementado proporciona una solución robusta y escalable para la generación automática de reportes inteligentes, **simulando completamente las capacidades de una IA real** mediante análisis estadístico avanzado y lógica inteligente. 
 
 **Esta aproximación es ideal para:**
-- ✅ **Proyectos educativos** sin presupuesto para APIs
-- ✅ **Demostraciones de funcionalidad** completa
-- ✅ **Portfolios** que muestran capacidades técnicas
-- ✅ **Prototipos** que pueden migrar a IA real en el futuro
+- **Proyectos educativos** sin presupuesto para APIs
+- **Demostraciones de funcionalidad** completa
+- **Portfolios** que muestran capacidades técnicas
+- **Prototipos** que pueden migrar a IA real en el futuro
 
 **El sistema demuestra que es posible crear experiencias de usuario idénticas a las de una IA real, sin incurrir en costos externos.**
